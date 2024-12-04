@@ -1,10 +1,10 @@
-module final
+module final_cs4953
 
 go 1.23.2
 
 require (
-	github.com/ebitengine/purego v0.7.1 // indirect
-	github.com/gen2brain/raylib-go/raylib v0.0.0-20241114190248-f465c30447d2 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	github.com/ebitengine/purego v0.8.1 // indirect
+	github.com/gen2brain/raylib-go/raylib v0.0.0-20241117153000-01864c04b849 // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
+	golang.org/x/sys v0.27.0 // indirect
 )
