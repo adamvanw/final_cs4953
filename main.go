@@ -30,7 +30,7 @@ func initializeSongsMenu() []*TextButton {
 func initializeOptionsMenu() []*TextButton {
 	return []*TextButton{
 		NewTextButton("Back to Main Menu", rl.Vector2{float32(630 - rl.MeasureText("Back to Main Menu", 10)), 340}, 10),
-		NewTextButton("Resolution: 1920x1080", rl.Vector2{10, 175}, 10),
+		NewTextButton("Resolution: 1920x1080", rl.Vector2{10, 30}, 10),
 	}
 }
 
@@ -43,7 +43,7 @@ func main() {
 	color_text := rl.Color{239, 214, 239, 255}
 	color_text_selected := rl.Color{249, 161, 174, 255}
 
-	var resolutionIndex = 2
+	var resolutionIndex = 1
 	resolutions := []rl.Vector2{rl.Vector2{640, 360}, rl.Vector2{1280, 720}, rl.Vector2{1920, 1080}, rl.Vector2{2560, 1440}, rl.Vector2{3840, 2160}}
 	var width int32 = int32(resolutions[resolutionIndex].X)
 	var height int32 = int32(resolutions[resolutionIndex].Y)

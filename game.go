@@ -107,7 +107,7 @@ func (g *Game) Draw() {
 			if g.ATimes[i] <= g.Time+0.25 && g.ATimes[i] > g.Time-0.25 {
 				color = rl.Gray
 			}
-			rl.DrawTexture(g.Footsteps[0], 208, int32(300+((g.Time-g.ATimes[i])/0.75)*400), color)
+			rl.DrawTexture(g.Footsteps[0], 208, int32(236+((g.Time-g.ATimes[i])/0.75)*400), color)
 		}
 	}
 	for i := 0; i < len(g.DTimes); i++ {
@@ -119,7 +119,7 @@ func (g *Game) Draw() {
 			if g.DTimes[i] <= g.Time+0.25 && g.DTimes[i] > g.Time-0.25 {
 				color = rl.Gray
 			}
-			rl.DrawTexture(g.Footsteps[1], 300, int32(300+((g.Time-g.DTimes[i])/0.75)*400), color)
+			rl.DrawTexture(g.Footsteps[1], 300, int32(236+((g.Time-g.DTimes[i])/0.75)*400), color)
 		}
 	}
 
@@ -129,15 +129,18 @@ func (g *Game) Draw() {
 		}
 		if g.DrawingTimes[i] <= g.Time+1 && g.DrawingTimes[i] > g.Time-0.25 {
 			var opacity uint8
-			if g.DrawingTimes[i] < g.Time {
-				opacity = uint8(math.Abs(float64(g.Time-g.DrawingTimes[i])) * 255)
-			} else if g.DrawingTimes[i] > g.Time {
-				opacity = uint8((math.Abs(float64(g.DrawingTimes[i]-g.Time)) / 0.25) * 255)
+			if g.DrawingTimes[i] > g.Time {
+				opacity = 255 - uint8(math.Abs(float64(g.Time-g.DrawingTimes[i]))*255)
+			} else if g.DrawingTimes[i] < g.Time {
+				opacity = uint8((math.Abs(float64(g.DrawingTimes[i]-g.Time)+0.25) / 0.25) * 255)
 			} else {
 				opacity = 255
 			}
 			color := rl.Color{255, 255, 255, opacity}
-			rl.DrawCircleV(g.Drawings[i], 15, color)
+			if g.Time < g.DrawingTimes[i]+0.25 && g.Time > g.DrawingTimes[i]-0.25 {
+				color = rl.Color{128, 128, 255, opacity}
+			}
+			rl.DrawCircleLinesV(g.Drawings[i], 15, color)
 		}
 	}
 }
@@ -195,5 +198,17 @@ func (g *Game) DrawScore() {
 }
 
 func (g *Game) HandleInputMouse(mousePos rl.Vector2) {
+	var closestTime float32 = g.DrawingTimes[0]
+	var index int = 0
 
+	for i := 0; i < len(g.DrawingTimes); i++ {
+		if math.Abs(float64(closestTime-g.Time)) > math.Abs(float64(g.DrawingTimes[i]-g.Time)) && rl.CheckCollisionPointCircle(mousePos, g.Drawings[i], 20) {
+			index = i
+			closestTime = g.DrawingTimes[i]
+		}
+	}
+
+	if math.Abs(float64(closestTime-g.Time)) <= 0.25 {
+		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.25)
+	}
 }
