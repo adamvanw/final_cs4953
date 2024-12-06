@@ -145,7 +145,7 @@ func (g *Game) Draw() {
 	}
 }
 
-func (g *Game) HandleInputRune(inputType rune) {
+func (g *Game) HandleInputRune(inputType rune) bool {
 	var times []float32
 	if inputType == 'A' {
 		times = g.ATimes
@@ -170,7 +170,9 @@ func (g *Game) HandleInputRune(inputType rune) {
 		} else {
 			g.DScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.25)
 		}
+		return true
 	}
+	return false
 }
 
 func (g *Game) DrawScore() {
@@ -208,8 +210,8 @@ func (g *Game) HandleInputMouse(mousePos rl.Vector2) bool {
 		}
 	}
 
-	if math.Abs(float64(closestTime-g.Time)) <= 0.25 {
-		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.25)
+	if math.Abs(float64(closestTime-g.Time)) <= 0.2 {
+		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.2)
 		return true
 	}
 	return false

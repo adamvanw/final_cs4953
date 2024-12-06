@@ -15,9 +15,9 @@ const (
 )
 
 func initializeMainMenu() []*TextButton {
-	return []*TextButton{NewTextButton("Song Selection", rl.Vector2{float32(630 - rl.MeasureText("Song Selection", 10)), 155}, 10),
-		NewTextButton("Options", rl.Vector2{float32(630 - rl.MeasureText("Options", 10)), 175}, 10),
-		NewTextButton("Exit to Desktop", rl.Vector2{float32(630 - rl.MeasureText("Exit to Desktop", 10)), 195}, 10)}
+	return []*TextButton{NewTextButton("Song Selection", rl.Vector2{float32(440 - rl.MeasureText("Song Selection", 10)/2), 225}, 10),
+		NewTextButton("Options", rl.Vector2{float32(440 - rl.MeasureText("Options", 10)/2), 245}, 10),
+		NewTextButton("Exit to Desktop", rl.Vector2{float32(440 - rl.MeasureText("Exit to Desktop", 10)/2), 265}, 10)}
 }
 
 func initializeSongsMenu() []*TextButton {
@@ -84,7 +84,20 @@ func main() {
 	chalkText := rl.LoadTexture("resources/sprites/chalk.png")
 	bgImg := rl.LoadImage("resources/sprites/bg.png")
 	backg := rl.LoadTextureFromImage(bgImg)
+	logoText := rl.LoadTexture("resources/sprites/logo.png")
 	rl.UnloadImage(bgImg)
+
+	misinputSound := rl.LoadSound("resources/audio/misinput.mp3")
+	rl.SetSoundVolume(misinputSound, 0.15)
+
+	idleAnim := NewAnim("idle-Sheet.png", 4, false, 0.1, rl.Color{251, 213, 220, 255})
+	// blinkAnim := NewAnim("blink-Sheet.png", 4, false, 0.2)
+	leftAnim := NewAnim("left-Sheet.png", 4, true, 0.1, rl.Color{232, 146, 146, 255})
+	rightAnim := NewAnim("right-Sheet.png", 4, true, 0.1, rl.Color{146, 177, 232, 255})
+	bothAnim := NewAnim("both-Sheet.png", 4, true, 0.1, rl.RayWhite)
+	missAnim := NewAnim("miss-Sheet.png", 5, true, 0.1, rl.Color{253, 143, 141, 255})
+
+	gameAnim := bothAnim
 
 	camera := rl.NewCamera2D(rl.Vector2{0, 0}, rl.Vector2{0, 0}, 0, float32(width/640))
 
@@ -129,6 +142,8 @@ func main() {
 			for i := 0; i < len(menuButtons); i++ {
 				menuButtons[i].Draw(color_text_selected, color_text)
 			}
+			rl.DrawTexture(logoText, 340, 80, rl.White)
+			idleAnim.Draw(rl.Vector2{0, -120}, rl.GetFrameTime())
 
 			rl.EndMode2D()
 			rl.DrawFPS(10, 10)
@@ -178,20 +193,43 @@ func main() {
 				}
 			}
 			if rl.IsKeyPressed(rl.KeyA) {
-				game.HandleInputRune('A')
+				if !game.HandleInputRune('A') && gameState == GAME {
+					rl.PlaySound(misinputSound)
+					gameAnim = missAnim
+					gameAnim.Time = 0.0
+				}
+				if game.HandleInputRune('A') && gameState == GAME {
+					gameAnim = leftAnim
+					gameAnim.Time = 0.0
+				}
 			}
 			if rl.IsKeyPressed(rl.KeyD) {
-				game.HandleInputRune('D')
+				if !game.HandleInputRune('D') && gameState == GAME {
+					rl.PlaySound(misinputSound)
+					gameAnim = missAnim
+					gameAnim.Time = 0.0
+				}
+				if game.HandleInputRune('D') && gameState == GAME {
+					gameAnim = rightAnim
+					gameAnim.Time = 0.0
+				}
 			}
 			if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
 				fmt.Printf("%f,%f\n", rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom).X, rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom).Y)
 				var good = game.HandleInputMouse(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom))
-				if rl.CheckCollisionPointRec(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom), rl.Rectangle{423, 33, 190, 112}) {
+				if rl.CheckCollisionPointRec(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom), rl.Rectangle{416, 26, 200, 126}) {
 					color := rl.Color{186, 242, 164, 255}
 					if !good {
 						color = rl.Color{248, 162, 162, 255}
+						if gameState == GAME {
+							rl.PlaySound(misinputSound)
+							gameAnim = missAnim
+							gameAnim.Time = 0.0
+						}
 					}
-					chalkMarks = append(chalkMarks, ChalkMark{rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom), 1.5, color})
+					if gameState == GAME {
+						chalkMarks = append(chalkMarks, ChalkMark{rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom), 1.5, color})
+					}
 				}
 			}
 
@@ -202,6 +240,8 @@ func main() {
 			rl.DrawTexture(backg, 0, 0, rl.White)
 			game.Draw()
 			game.DrawScore()
+
+			gameAnim.Draw(rl.Vector2{10, -120}, rl.GetFrameTime())
 
 			if gameState == PAUSE {
 				rl.DrawRectangle(0, 0, 640, 360, rl.Color{0, 0, 0, 128})
