@@ -119,7 +119,7 @@ func (g *Game) Draw() {
 			if g.DTimes[i] <= g.Time+0.25 && g.DTimes[i] > g.Time-0.25 {
 				color = rl.Gray
 			}
-			rl.DrawTexture(g.Footsteps[1], 300, int32(236+((g.Time-g.DTimes[i])/0.75)*400), color)
+			rl.DrawTexture(g.Footsteps[1], 304, int32(236+((g.Time-g.DTimes[i])/0.75)*400), color)
 		}
 	}
 
@@ -197,7 +197,7 @@ func (g *Game) DrawScore() {
 	rl.DrawText(fmt.Sprintf("Chalk Marks: %d", drawingScores), 500, 320, 10, rl.White)
 }
 
-func (g *Game) HandleInputMouse(mousePos rl.Vector2) {
+func (g *Game) HandleInputMouse(mousePos rl.Vector2) bool {
 	var closestTime float32 = g.DrawingTimes[0]
 	var index int = 0
 
@@ -210,5 +210,7 @@ func (g *Game) HandleInputMouse(mousePos rl.Vector2) {
 
 	if math.Abs(float64(closestTime-g.Time)) <= 0.25 {
 		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.25)
+		return true
 	}
+	return false
 }
