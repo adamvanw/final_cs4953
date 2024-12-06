@@ -21,6 +21,8 @@ type Game struct {
 	AScores       []float32
 	DScores       []float32
 	DrawingScores []float32
+	Misses        uint
+	Filename      string
 }
 
 func NewGame(filename string) *Game {
@@ -67,6 +69,7 @@ func NewGame(filename string) *Game {
 	fmt.Printf("D: %d\n", len(DTimes))
 	fmt.Printf("Chalk inputs: %d\n", len(Drawings))
 
+	music.Looping = false
 	rl.PlayMusicStream(music)
 
 	footstep1 := rl.LoadImage("resources/sprites/footstep_1.png")
@@ -90,7 +93,7 @@ func NewGame(filename string) *Game {
 		DrawingScores[i] = -1.0
 	}
 
-	return &Game{music, ATimes, DTimes, Drawings, DrawingTimes, 0.0, footsteps, AScores, DScores, DrawingScores}
+	return &Game{music, ATimes, DTimes, Drawings, DrawingTimes, 0.0, footsteps, AScores, DScores, DrawingScores, 0, filename}
 }
 
 func (g *Game) UpdateGame(frameTime float32) {
@@ -164,11 +167,11 @@ func (g *Game) HandleInputRune(inputType rune) bool {
 	}
 
 	fmt.Printf("%f\n", math.Abs(float64(closestTime-g.Time)))
-	if math.Abs(float64(closestTime-g.Time)) <= 0.25 {
+	if math.Abs(float64(closestTime-g.Time)) <= 0.175 {
 		if inputType == 'A' {
-			g.AScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.25)
+			g.AScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.15)
 		} else {
-			g.DScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.25)
+			g.DScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.175)
 		}
 		return true
 	}
@@ -210,8 +213,8 @@ func (g *Game) HandleInputMouse(mousePos rl.Vector2) bool {
 		}
 	}
 
-	if math.Abs(float64(closestTime-g.Time)) <= 0.2 {
-		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.2)
+	if math.Abs(float64(closestTime-g.Time)) <= 0.175 {
+		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.175)
 		return true
 	}
 	return false

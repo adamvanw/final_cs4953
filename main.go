@@ -12,6 +12,7 @@ const (
 	SONG_SELECTION = 3
 	OPTIONS        = 4
 	CREATE_SONG    = 5
+	FINISH_SONG    = 6
 )
 
 func initializeMainMenu() []*TextButton {
@@ -52,6 +53,14 @@ func initializeGame(filename string) *Game {
 	return NewGame(filename)
 }
 
+func initializeFinishMenu() []*TextButton {
+	return []*TextButton{
+		NewTextButton("Restart", rl.Vector2{float32(640/2 - rl.MeasureText("Restart", 10)/2), 200}, 10),
+		NewTextButton("Return to Song Selection", rl.Vector2{float32(640/2 - rl.MeasureText("Return to Song Selection", 10)/2), 220}, 10),
+		NewTextButton("Return to Desktop", rl.Vector2{float32(640/2 - rl.MeasureText("Return to Desktop", 10)/2), 240}, 10),
+	}
+}
+
 // i initially put this in a chalk.go, but it made me sad
 type ChalkMark struct {
 	Position rl.Vector2
@@ -87,6 +96,9 @@ func main() {
 	logoText := rl.LoadTexture("resources/sprites/logo.png")
 	rl.UnloadImage(bgImg)
 
+	rightFoot := rl.LoadTexture("resources/sprites/right_on.png")
+	leftFoot := rl.LoadTexture("resources/sprites/left_on.png")
+
 	misinputSound := rl.LoadSound("resources/audio/misinput.mp3")
 	rl.SetSoundVolume(misinputSound, 0.15)
 
@@ -94,7 +106,7 @@ func main() {
 	// blinkAnim := NewAnim("blink-Sheet.png", 4, false, 0.2)
 	leftAnim := NewAnim("left-Sheet.png", 4, true, 0.1, rl.Color{232, 146, 146, 255})
 	rightAnim := NewAnim("right-Sheet.png", 4, true, 0.1, rl.Color{146, 177, 232, 255})
-	bothAnim := NewAnim("both-Sheet.png", 4, true, 0.1, rl.RayWhite)
+	bothAnim := NewAnim("both-Sheet.png", 4, true, 0.1, rl.Color{253, 212, 141, 255})
 	missAnim := NewAnim("miss-Sheet.png", 5, true, 0.1, rl.Color{253, 143, 141, 255})
 
 	gameAnim := bothAnim
@@ -150,9 +162,48 @@ func main() {
 			rl.EndDrawing()
 
 			break
-		default:
-			if game.Time > rl.GetMusicTimeLength(game.Music) {
+		case FINISH_SONG:
+			for i := 0; i < len(menuButtons); i++ {
+				menuButtons[i].CheckSelected(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom))
+			}
+			if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+				for i := 0; i < len(menuButtons); i++ {
+					if menuButtons[i].Selected {
+						switch i {
+						case 0:
+							gameState = GAME
+							game = *initializeGame(game.Filename)
+							gameAnim = bothAnim
+							gameAnim.Time = 0.0
+							break
+						case 1:
+							menuButtons = initializeSongsMenu()
+							gameState = SONG_SELECTION
+							break
+						case 2:
+							rl.CloseAudioDevice()
+							rl.CloseWindow()
+							break
+						}
+					}
+				}
+			}
 
+			rl.BeginDrawing()
+			rl.BeginMode2D(camera)
+			rl.ClearBackground(color_bg)
+
+			for i := 0; i < len(menuButtons); i++ {
+				menuButtons[i].Draw(color_text_selected, color_text)
+			}
+
+			rl.EndMode2D()
+			rl.EndDrawing()
+		default:
+			if game.Time > rl.GetMusicTimeLength(game.Music) || (gameState == GAME && !rl.IsMusicStreamPlaying(game.Music)) {
+				menuButtons = initializeFinishMenu()
+				gameState = FINISH_SONG
+				break
 			}
 			if gameState == GAME {
 				rl.UpdateMusicStream(game.Music)
@@ -195,6 +246,7 @@ func main() {
 			if rl.IsKeyPressed(rl.KeyA) {
 				if !game.HandleInputRune('A') && gameState == GAME {
 					rl.PlaySound(misinputSound)
+					game.Misses++
 					gameAnim = missAnim
 					gameAnim.Time = 0.0
 				}
@@ -206,6 +258,7 @@ func main() {
 			if rl.IsKeyPressed(rl.KeyD) {
 				if !game.HandleInputRune('D') && gameState == GAME {
 					rl.PlaySound(misinputSound)
+					game.Misses++
 					gameAnim = missAnim
 					gameAnim.Time = 0.0
 				}
@@ -223,6 +276,7 @@ func main() {
 						color = rl.Color{248, 162, 162, 255}
 						if gameState == GAME {
 							rl.PlaySound(misinputSound)
+							game.Misses++
 							gameAnim = missAnim
 							gameAnim.Time = 0.0
 						}
@@ -256,6 +310,12 @@ func main() {
 						color = rl.ColorAlpha(chalkMarks[i].Color, chalkMarks[i].Time)
 					}
 					rl.DrawTexture(chalkText, int32(chalkMarks[i].Position.X)-chalkText.Width/2, int32(chalkMarks[i].Position.Y)-chalkText.Height/2, color)
+				}
+				if rl.IsKeyDown(rl.KeyA) {
+					rl.DrawTexture(leftFoot, 0, 0, rl.White)
+				}
+				if rl.IsKeyDown(rl.KeyD) {
+					rl.DrawTexture(rightFoot, 0, 0, rl.White)
 				}
 			}
 
@@ -305,6 +365,8 @@ func main() {
 							}
 							break
 						}
+						gameAnim = bothAnim
+						gameAnim.Time = 0.0
 					}
 				}
 			}
