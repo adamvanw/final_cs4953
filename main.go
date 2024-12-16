@@ -24,13 +24,13 @@ func initializeMainMenu() []*TextButton {
 func initializeSongsMenu() []*TextButton {
 	return []*TextButton{
 		NewTextButton("Back to Main Menu", rl.Vector2{float32(630 - rl.MeasureText("Back to Main Menu", 10)), 340}, 10),
-		NewTextButton("The 25th Hour - Schlatt and Lud's Musical Emporium", rl.Vector2{10, 175}, 10),
+		NewTextButton("The 25th Hour - Schlatt and Lud's Musical Emporium", rl.Vector2{10, 30}, 10),
 		/*
 			"I Got a Stick Feat James Gavins" Kevin MacLeod (incompetech.com)
 			Licensed under Creative Commons: By Attribution 4.0 License
 			http://creativecommons.org/licenses/by/4.0/
 		*/
-		NewTextButton("I Got a Stick (ft. James Gavins) - Kevin McLeod", rl.Vector2{10, 195}, 10),
+		NewTextButton("I Got a Stick (ft. James Gavins) - Kevin McLeod", rl.Vector2{10, 50}, 10),
 	}
 }
 
@@ -108,8 +108,15 @@ func main() {
 	rightAnim := NewAnim("right-Sheet.png", 4, true, 0.1, rl.Color{146, 177, 232, 255})
 	bothAnim := NewAnim("both-Sheet.png", 4, true, 0.1, rl.Color{253, 212, 141, 255})
 	missAnim := NewAnim("miss-Sheet.png", 5, true, 0.1, rl.Color{253, 143, 141, 255})
+	drawAnim := NewAnim("draw-Sheet.png", 3, true, 0.1, rl.Color{186, 242, 164, 255})
 
+	gradeImgs := []*rl.Image{rl.LoadImage("resources/sprites/grade_S.png"), rl.LoadImage("resources/sprites/grade_A.png"), rl.LoadImage("resources/sprites/grade_B.png"), rl.LoadImage("resources/sprites/grade_C.png"), rl.LoadImage("resources/sprites/grade_F.png")}
+	var gradeImg *rl.Image
+	var gradeText rl.Texture2D
+
+	var score float32 = 0.0
 	gameAnim := bothAnim
+	var scoreTime float32 = 0.0
 
 	camera := rl.NewCamera2D(rl.Vector2{0, 0}, rl.Vector2{0, 0}, 0, float32(width/640))
 
@@ -157,12 +164,19 @@ func main() {
 			rl.DrawTexture(logoText, 340, 80, rl.White)
 			idleAnim.Draw(rl.Vector2{0, -120}, rl.GetFrameTime())
 
+			rl.DrawText("v1.0.2 - 12.10.24", 640 - rl.MeasureText("v1.0.2 - 12.10.24", 10) - 10, 360 - 15, 10, color_text)
+
 			rl.EndMode2D()
 			rl.DrawFPS(10, 10)
 			rl.EndDrawing()
 
 			break
 		case FINISH_SONG:
+			scoreTime += rl.GetFrameTime()
+			if scoreTime >= 3 && scoreTime < 9 {
+				scoreTime = 10.0
+				gradeText = rl.LoadTextureFromImage(gradeImg)
+			}
 			for i := 0; i < len(menuButtons); i++ {
 				menuButtons[i].CheckSelected(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom))
 			}
@@ -173,8 +187,10 @@ func main() {
 						case 0:
 							gameState = GAME
 							game = *initializeGame(game.Filename)
+							menuButtons = initializePauseMenu()
 							gameAnim = bothAnim
 							gameAnim.Time = 0.0
+							scoreTime = 0.0
 							break
 						case 1:
 							menuButtons = initializeSongsMenu()
@@ -189,6 +205,12 @@ func main() {
 				}
 			}
 
+			if scoreTime < 3 {
+				blurredGradeImg := FrostedGlassTexture(gradeImg, (1.0-(scoreTime-2.0))*5, 1.0-(scoreTime-2.0))
+				fmt.Printf("%.2f, %.2f", (1.0-(scoreTime-2.0))*5, 1.0-(scoreTime-2.0))
+				gradeText = rl.LoadTextureFromImage(blurredGradeImg)
+			}
+
 			rl.BeginDrawing()
 			rl.BeginMode2D(camera)
 			rl.ClearBackground(color_bg)
@@ -197,13 +219,36 @@ func main() {
 				menuButtons[i].Draw(color_text_selected, color_text)
 			}
 
+			rl.DrawTexture(gradeText, 640/2-128/2, 60, rl.White)
+
+			if scoreTime < 2.0 {
+				rl.DrawRectangle(0, 0, 640, 360, rl.ColorAlpha(color_bg, 1.0-(scoreTime-1.0)))
+			}
+
 			rl.EndMode2D()
+			rl.DrawFPS(10, 10)
 			rl.EndDrawing()
 		default:
 			if game.Time > rl.GetMusicTimeLength(game.Music) || (gameState == GAME && !rl.IsMusicStreamPlaying(game.Music)) {
-				menuButtons = initializeFinishMenu()
-				gameState = FINISH_SONG
-				break
+				scoreTime += rl.GetFrameTime()
+				if scoreTime > 1.0 {
+					menuButtons = initializeFinishMenu()
+					gameState = FINISH_SONG
+					chalkMarks = []ChalkMark{}
+					score = game.CalculateScore()
+					if score >= 95 {
+						gradeImg = gradeImgs[0]
+					} else if score >= 90 {
+						gradeImg = gradeImgs[1]
+					} else if score >= 80 {
+						gradeImg = gradeImgs[2]
+					} else if score >= 65 {
+						gradeImg = gradeImgs[3]
+					} else {
+						gradeImg = gradeImgs[4]
+					}
+					break
+				}
 			}
 			if gameState == GAME {
 				rl.UpdateMusicStream(game.Music)
@@ -221,10 +266,15 @@ func main() {
 							switch i {
 							case 0:
 								gameState = GAME
+								scoreTime = 0.0
+								gameAnim = bothAnim
+								gameAnim.Time = 0.0
 								break
 							case 1:
 								menuButtons = initializeSongsMenu()
 								gameState = SONG_SELECTION
+								chalkMarks = []ChalkMark{}
+								scoreTime = 0.0
 								break
 							case 2:
 								rl.CloseAudioDevice()
@@ -282,6 +332,10 @@ func main() {
 						}
 					}
 					if gameState == GAME {
+						if good {
+							gameAnim = drawAnim
+							gameAnim.Time = 0.0
+						}
 						chalkMarks = append(chalkMarks, ChalkMark{rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom), 1.5, color})
 					}
 				}
@@ -319,6 +373,10 @@ func main() {
 				}
 			}
 
+			if scoreTime > 0.0 {
+				rl.DrawRectangle(0, 0, 640, 360, rl.ColorAlpha(color_bg, scoreTime))
+			}
+
 			rl.EndMode2D()
 			rl.DrawFPS(10, 10)
 			rl.EndDrawing()
@@ -331,6 +389,7 @@ func main() {
 
 			break
 		case SONG_SELECTION:
+			scoreTime = 0
 			for i := 0; i < len(menuButtons); i++ {
 				menuButtons[i].CheckSelected(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom))
 			}
@@ -443,7 +502,15 @@ func main() {
 			if rl.IsMouseButtonDown(rl.MouseButtonLeft) && !creation.ChalkDown {
 				creation.UpdateSongSessionMouse(rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom))
 				creation.ChalkDown = true
+				chalkMarks = append(chalkMarks, ChalkMark{rl.Vector2Scale(rl.GetMousePosition(), 1/camera.Zoom), 1.0, rl.Color{186, 242, 164, 255}})
 			}
+			for i := len(chalkMarks) - 1; i >= 0; i-- {
+				chalkMarks[i].Time -= rl.GetFrameTime()
+				if chalkMarks[i].Time < 0 {
+					chalkMarks = append(chalkMarks[:i], chalkMarks[i+1:]...)
+				}
+			}
+
 			if rl.IsMouseButtonUp(rl.MouseButtonLeft) && creation.ChalkDown {
 				creation.ChalkDown = false
 			}
@@ -459,6 +526,15 @@ func main() {
 			rl.ClearBackground(color_bg)
 
 			rl.DrawTexture(backg, 0, 0, rl.White)
+			if rl.IsKeyDown(rl.KeyA) {
+				rl.DrawTexture(leftFoot, 0, 0, rl.White)
+			}
+			if rl.IsKeyDown(rl.KeyD) {
+				rl.DrawTexture(rightFoot, 0, 0, rl.White)
+			}
+			for i := 0; i < len(chalkMarks); i++ {
+				rl.DrawTexture(chalkText, int32(chalkMarks[i].Position.X)-chalkText.Width/2, int32(chalkMarks[i].Position.Y)-chalkText.Height/2, rl.ColorAlpha(chalkMarks[i].Color, chalkMarks[i].Time))
+			}
 
 			rl.EndMode2D()
 			rl.DrawFPS(10, 10)

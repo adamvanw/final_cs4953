@@ -25,8 +25,37 @@ type Game struct {
 	Filename      string
 }
 
+func (g *Game) CalculateScore() float32 {
+	var score float32
+	var totalMapHits int = len(g.ATimes) + len(g.DTimes) + len(g.DrawingTimes)
+	var totalActualHits int = 0
+	for i := 0; i < len(g.ATimes); i++ {
+		if g.AScores[i] >= 0.0 {
+			totalActualHits++
+		}
+	}
+	for i := 0; i < len(g.DTimes); i++ {
+		if g.DScores[i] >= 0.0 {
+			totalActualHits++
+		}
+	}
+	for i := 0; i < len(g.DrawingTimes); i++ {
+		if g.DrawingScores[i] >= 0.0 {
+			totalActualHits++
+		}
+	}
+	totalActualHits -= int(g.Misses)
+
+	score = float32(totalActualHits) / float32(totalMapHits)
+
+	fmt.Printf("Score: %.2f\n", score)
+
+	return score * 100
+}
+
 func NewGame(filename string) *Game {
 	music := rl.LoadMusicStream(fmt.Sprintf("resources/audio/%s", filename))
+	rl.SetMasterVolume(0.5)
 	file, err := os.Open(fmt.Sprintf("resources/sheets/%s.sheet", filename))
 	if err != nil {
 		log.Fatal(err)
@@ -215,6 +244,7 @@ func (g *Game) HandleInputMouse(mousePos rl.Vector2) bool {
 
 	if math.Abs(float64(closestTime-g.Time)) <= 0.175 {
 		g.DrawingScores[index] = float32(math.Abs(float64(closestTime-g.Time)) / 0.175)
+		fmt.Printf("Score: %f\n", g.DrawingScores[index])
 		return true
 	}
 	return false

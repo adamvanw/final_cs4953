@@ -7,7 +7,7 @@ import (
 
 // could not figure out a good GLSL implementation for this.
 // this is sparingly used in the game due to this.
-func FrostedGlassTexture(d *rl.Image, shift int32, intensity float32) *rl.Image {
+func FrostedGlassTexture(d *rl.Image, shift float32, intensity float32) *rl.Image {
 	var newColors = make([]byte, d.Width*d.Height*4)
 	for j := int32(0); j < d.Height; j++ {
 		for i := int32(0); i < d.Width; i++ {
@@ -16,8 +16,8 @@ func FrostedGlassTexture(d *rl.Image, shift int32, intensity float32) *rl.Image 
 
 			if rand.Float32() < intensity {
 				randVec := rl.Vector2Rotate(rl.Vector2{1, 0}, rand.Float32()*(2*rl.Pi))
-				x += int32(randVec.X * float32(shift))
-				y += int32(randVec.Y * float32(shift))
+				x += int32(randVec.X * shift)
+				y += int32(randVec.Y * shift)
 				if x < 0 {
 					x = 0
 				} else if x >= d.Width {
